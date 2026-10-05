@@ -293,7 +293,7 @@ const bancoQuestoes = [
     { id: 178, ano: 2020, gabarito: "D", dificuldade: "facil", tema: "Razões e Proporções" },
     { id: 179, ano: 2020, gabarito: "A", dificuldade: "media", tema: "Geometria Espacial" },
     { id: 180, ano: 2020, gabarito: "C", dificuldade: "dificil", tema: "Logaritmos" },
-
+/*
     // ==========================================
     // ENEM 2019 (Caderno Amarelo - Matemática)[cite: 9]
     // ==========================================
@@ -391,7 +391,7 @@ const bancoQuestoes = [
     { id: 178, ano: 2018, gabarito: "B", dificuldade: "facil", tema: "Razões e Proporções" },
     { id: 179, ano: 2018, gabarito: "D", dificuldade: "media", tema: "Geometria Espacial" },
     { id: 180, ano: 2018, gabarito: "D", dificuldade: "dificil", tema: "Logaritmos" },
-
+*/
     // ==========================================
     // ENEM 2017 (Caderno Amarelo - Matemática)[cite: 11]
     // ==========================================
