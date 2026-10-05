@@ -441,6 +441,7 @@ const bancoQuestoes = [
     { id: 179, ano: 2017, gabarito: "C", dificuldade: "media", tema: "Geometria Espacial" },
     { id: 180, ano: 2017, gabarito: "E", dificuldade: "dificil", tema: "Logaritmos" },
 
+    /*
     // ==========================================
     // ENEM 2016 (Caderno Amarelo - Matemática)[cite: 12]
     // ==========================================
@@ -538,6 +539,6 @@ const bancoQuestoes = [
     { id: 178, ano: 2015, gabarito: "B", dificuldade: "facil", tema: "Razões e Proporções" },
     { id: 179, ano: 2015, gabarito: "C", dificuldade: "media", tema: "Geometria Espacial" },
     { id: 180, ano: 2015, gabarito: "C", dificuldade: "dificil", tema: "Logaritmos" }
-
+*/
 
 ];
