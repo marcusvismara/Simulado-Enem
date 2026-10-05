@@ -54,18 +54,13 @@
         <div class="form-group">
             <label for="select-ano">Selecione o Ano:</label>
             <select id="select-ano">
-                <option value="todos">Todos os Anos (Misturado 2015-2025)</option>
+                <option value="todos">Todos os Anos Selecionados</option>
                 <option value="2025">ENEM 2025</option>
                 <option value="2024">ENEM 2024</option>
                 <option value="2023">ENEM 2023</option>
                 <option value="2022">ENEM 2022</option>
                 <option value="2021">ENEM 2021</option>
-                <option value="2020">ENEM 2020</option>
-                <option value="2019">ENEM 2019</option>
-                <option value="2018">ENEM 2018</option>
                 <option value="2017">ENEM 2017</option>
-                <option value="2016">ENEM 2016</option>
-                <option value="2015">ENEM 2015</option>
             </select>
         </div>
         <button id="btn-start" class="btn-nav" style="width: 100%;">Iniciar Simulado</button>
@@ -104,6 +99,13 @@
         <p style="margin-top: 10px; color: #64748b;">Entregue sua folha de rascunhos com os cálculos para o professor.</p>
         <div class="score"><span id="correct-count">0</span> / 10</div>
         <p id="feedback-text">Você acertou X% da prova.</p>
+        
+        <!-- Container de Revisão -->
+        <div id="review-container" style="text-align: left; margin-top: 25px; border-top: 2px solid #e2e8f0; padding-top: 20px;">
+            <h3 style="margin-bottom: 15px; color: var(--primary);">Revisão das Questões</h3>
+            <div id="review-list" style="display: flex; flex-direction: column; gap: 15px;"></div>
+        </div>
+
         <button class="btn-nav" style="margin-top: 20px;" onclick="voltarAoMenu()">Fazer Novo Simulado</button>
     </div>
 
@@ -116,6 +118,10 @@
         let respostasAluno = {}; 
         let tempoRestante = 50 * 60; 
         let intervaloCronometro;
+
+        // Variáveis para o tempo por questão
+        let temposQuestao = {};
+        let tempoInicioQuestao = 0;
 
         function gerarSimulado(anoEscolhido) {
             let base = bancoQuestoes;
@@ -131,6 +137,13 @@
         }
 
         function renderizarQuestao() {
+            // Salva o tempo gasto na questão anterior antes de mudar
+            const agora = Date.now();
+            if (tempoInicioQuestao > 0) {
+                let tempoGastoSegundos = Math.floor((agora - tempoInicioQuestao) / 1000);
+                temposQuestao[indiceAtual] = (temposQuestao[indiceAtual] || 0) + tempoGastoSegundos;
+            }
+
             const q = questoesSorteadas[indiceAtual];
             document.getElementById("current-index").innerText = indiceAtual + 1;
             document.getElementById("quest-info").innerText = `ENEM ${q.ano} - ${q.tema || 'Geral'} (Q.${q.id})`;
@@ -149,10 +162,13 @@
             } else {
                 document.getElementById("btn-next").innerText = "Próxima";
             }
+
+            // Reinicia a contagem para a nova questão
+            tempoInicioQuestao = Date.now();
         }
 
         function iniciarCronometro() {
-            tempoRestante = 50 * 60; // reseta o tempo
+            tempoRestante = 50 * 60; 
             clearInterval(intervaloCronometro);
             
             intervaloCronometro = setInterval(() => {
@@ -172,35 +188,94 @@
 
         function finalizarSimulado() {
             clearInterval(intervaloCronometro);
+
+            // Contabiliza o tempo da última questão aberta
+            if (tempoInicioQuestao > 0) {
+                let tempoFinalExtra = Math.floor((Date.now() - tempoInicioQuestao) / 1000);
+                temposQuestao[indiceAtual] = (temposQuestao[indiceAtual] || 0) + tempoFinalExtra;
+            }
+
             document.getElementById("quiz-header").classList.add("hide");
             document.getElementById("quiz-screen").classList.add("hide");
             document.getElementById("quiz-footer").classList.add("hide");
 
             let acertos = 0;
+            let reviewListHTML = "";
+
             questoesSorteadas.forEach((q, index) => {
-                if(respostasAluno[index] === q.gabarito) {
+                const respostaDoAluno = respostasAluno[index] || "Não respondida";
+                const acertou = respostaDoAluno === q.gabarito;
+                
+                if (acertou) {
                     acertos++;
                 }
+
+                const corBorda = acertou ? "#22c55e" : "#dc2626";
+                
+                // Alteração aqui: agora exibe a resposta escolhida e o gabarito oficial tanto para acertos quanto para erros
+                const statusTexto = acertou 
+                    ? `✅ Acertou! (Sua resposta: ${respostaDoAluno} | Gabarito: ${q.gabarito})` 
+                    : `❌ Errou (Sua resposta: ${respostaDoAluno} | Gabarito: ${q.gabarito})`;
+                
+                // Formatação do tempo gasto
+                const segundosTotais = temposQuestao[index] || 0;
+                const min = Math.floor(segundosTotais / 60);
+                const seg = segundosTotais % 60;
+                const tempoFormatado = min > 0 ? `${min}m ${seg}s` : `${seg} segundos`;
+
+                const idImg = `img-questao-${index}`;
+
+                reviewListHTML += `
+                    <div style="border: 2px solid ${corBorda}; border-radius: 8px; padding: 15px; background: #f8fafc;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div>
+                                <p style="font-weight: bold; margin-bottom: 4px; color: #1e293b;">Questão ${index + 1} (ENEM ${q.ano} - Q.${q.id})</p>
+                                <p style="font-size: 0.9rem; font-weight: 600; color: ${corBorda};">${statusTexto}</p>
+                                <p style="font-size: 0.85rem; color: #64748b; margin-top: 4px;">⏱️ Tempo gasto: <strong>${tempoFormatado}</strong></p>
+                            </div>
+                            <button onclick="alternarImagem('${idImg}', this)" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem;">
+                                Ver Questão
+                            </button>
+                        </div>
+                        <div id="${idImg}" style="display: none; margin-top: 15px;">
+                            <img src="questoes/${q.ano}/${q.id}.png" style="width: 100%; height: auto; border-radius: 6px; border: 1px solid #cbd5e1;" alt="Questão ${q.id}">
+                        </div>
+                    </div>
+                `;
             });
 
             document.getElementById("correct-count").innerText = acertos;
             document.getElementById("feedback-text").innerText = `Você acertou ${acertos * 10}% da prova de forma preliminar.`;
+            
+            document.getElementById("review-list").innerHTML = reviewListHTML;
             document.getElementById("screen-results").classList.remove("hide");
         }
 
-        // Função para resetar e voltar ao menu inicial sem atualizar a página
+        // Função para mostrar/esconder a imagem na revisão
+        function alternarImagem(idElemento, botao) {
+            const containerImg = document.getElementById(idElemento);
+            if (containerImg.style.display === "none") {
+                containerImg.style.display = "block";
+                botao.innerText = "Ocultar Questão";
+                botao.style.background = "#64748b";
+            } else {
+                containerImg.style.display = "none";
+                botao.innerText = "Ver Questão";
+                botao.style.background = "var(--primary)";
+            }
+        }
+
         function voltarAoMenu() {
             clearInterval(intervaloCronometro);
             respostasAluno = {};
+            temposQuestao = {};
             indiceAtual = 0;
+            tempoInicioQuestao = 0;
 
-            // Esconde telas ativas
             document.getElementById("quiz-header").classList.add("hide");
             document.getElementById("quiz-screen").classList.add("hide");
             document.getElementById("quiz-footer").classList.add("hide");
             document.getElementById("screen-results").classList.add("hide");
-
-            // Mostra tela de configuração
             document.getElementById("screen-config").classList.remove("hide");
         }
 
@@ -214,7 +289,6 @@
                 return;
             }
 
-            // Oculta tela de config e exibe o simulado
             document.getElementById("screen-config").classList.add("hide");
             document.getElementById("quiz-header").classList.remove("hide");
             document.getElementById("quiz-screen").classList.remove("hide");
@@ -224,7 +298,6 @@
             iniciarCronometro();
         });
 
-        // Evento do botão Voltar ao Menu no cabeçalho
         document.getElementById("btn-voltar-home").addEventListener("click", () => {
             if(confirm("Deseja mesmo voltar ao menu inicial? O progresso atual será perdido.")) {
                 voltarAoMenu();
