@@ -142,9 +142,10 @@
         }
 
         function renderizarQuestao() {
-            // Salva o tempo gasto na questão anterior antes de mudar
             const agora = Date.now();
-            if (tempoInicioQuestao > 0) {
+            
+            // Se já passamos pela primeira questão, calcula e acumula o tempo dela
+            if (indiceAtual >= 0 && tempoInicioQuestao > 0) {
                 let tempoGastoSegundos = Math.floor((agora - tempoInicioQuestao) / 1000);
                 temposQuestao[indiceAtual] = (temposQuestao[indiceAtual] || 0) + tempoGastoSegundos;
             }
@@ -168,7 +169,7 @@
                 document.getElementById("btn-next").innerText = "Próxima";
             }
 
-            // Reinicia a contagem para a nova questão
+            // Reseta o cronômetro para o momento atual da questão ativa
             tempoInicioQuestao = Date.now();
         }
 
