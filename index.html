@@ -60,9 +60,9 @@
                 <option value="2023">ENEM 2023</option>
                 <option value="2022">ENEM 2022</option>
                 <option value="2021">ENEM 2021</option>
-                <option value="2022">ENEM 2020</option>
-                <option value="2021">ENEM 2019</option>
-                <option value="2022">ENEM 2018</option>
+                <option value="2020">ENEM 2020</option>
+                <option value="2019">ENEM 2019</option>
+                <option value="2018">ENEM 2018</option>
                 <option value="2017">ENEM 2017</option>
                 <option value="2016">ENEM 2016</option>
                 <option value="2015">ENEM 2015</option>
@@ -124,9 +124,19 @@
         let tempoRestante = 50 * 60; 
         let intervaloCronometro;
 
-        // Variáveis para o tempo por questão
+        // Tempo por questão (guardado em MILISSEGUNDOS)
         let temposQuestao = {};
         let tempoInicioQuestao = 0;
+
+        // Soma ao índice ATUAL o tempo decorrido desde o último marcador.
+        // Deve ser chamada SEMPRE ANTES de mudar o indiceAtual.
+        function registrarTempoQuestao() {
+            if (tempoInicioQuestao > 0) {
+                const gasto = Date.now() - tempoInicioQuestao;
+                temposQuestao[indiceAtual] = (temposQuestao[indiceAtual] || 0) + gasto;
+                tempoInicioQuestao = Date.now();
+            }
+        }
 
         function gerarSimulado(anoEscolhido) {
             let base = bancoQuestoes;
@@ -142,14 +152,6 @@
         }
 
         function renderizarQuestao() {
-            const agora = Date.now();
-            
-            // Se já passamos pela primeira questão, calcula e acumula o tempo dela
-            if (indiceAtual >= 0 && tempoInicioQuestao > 0) {
-                let tempoGastoSegundos = Math.floor((agora - tempoInicioQuestao) / 1000);
-                temposQuestao[indiceAtual] = (temposQuestao[indiceAtual] || 0) + tempoGastoSegundos;
-            }
-
             const q = questoesSorteadas[indiceAtual];
             document.getElementById("current-index").innerText = indiceAtual + 1;
             document.getElementById("quest-info").innerText = `ENEM ${q.ano} - ${q.tema || 'Geral'} (Q.${q.id})`;
@@ -169,7 +171,7 @@
                 document.getElementById("btn-next").innerText = "Próxima";
             }
 
-            // Reseta o cronômetro para o momento atual da questão ativa
+            // Marca o início da contagem para a questão que acabou de ser exibida
             tempoInicioQuestao = Date.now();
         }
 
@@ -196,10 +198,8 @@
             clearInterval(intervaloCronometro);
 
             // Contabiliza o tempo da última questão aberta
-            if (tempoInicioQuestao > 0) {
-                let tempoFinalExtra = Math.floor((Date.now() - tempoInicioQuestao) / 1000);
-                temposQuestao[indiceAtual] = (temposQuestao[indiceAtual] || 0) + tempoFinalExtra;
-            }
+            registrarTempoQuestao();
+            tempoInicioQuestao = 0;
 
             document.getElementById("quiz-header").classList.add("hide");
             document.getElementById("quiz-screen").classList.add("hide");
@@ -218,13 +218,12 @@
 
                 const corBorda = acertou ? "#22c55e" : "#dc2626";
                 
-                // Alteração aqui: agora exibe a resposta escolhida e o gabarito oficial tanto para acertos quanto para erros
                 const statusTexto = acertou 
                     ? `✅ Acertou! (Sua resposta: ${respostaDoAluno} | Gabarito: ${q.gabarito})` 
                     : `❌ Errou (Sua resposta: ${respostaDoAluno} | Gabarito: ${q.gabarito})`;
                 
-                // Formatação do tempo gasto
-                const segundosTotais = temposQuestao[index] || 0;
+                // Formatação do tempo gasto (converte de ms para segundos)
+                const segundosTotais = Math.round((temposQuestao[index] || 0) / 1000);
                 const min = Math.floor(segundosTotais / 60);
                 const seg = segundosTotais % 60;
                 const tempoFormatado = min > 0 ? `${min}m ${seg}s` : `${seg} segundos`;
@@ -295,6 +294,12 @@
                 return;
             }
 
+            // Zera tudo para um simulado novo
+            respostasAluno = {};
+            temposQuestao = {};
+            indiceAtual = 0;
+            tempoInicioQuestao = 0;
+
             document.getElementById("screen-config").classList.add("hide");
             document.getElementById("quiz-header").classList.remove("hide");
             document.getElementById("quiz-screen").classList.remove("hide");
@@ -312,15 +317,16 @@
 
         document.querySelectorAll(".btn-option").forEach(btn => {
             btn.addEventListener("click", (e) => {
-                const escolha = e.target.getAttribute("data-ans");
+                const escolha = e.currentTarget.getAttribute("data-ans");
                 respostasAluno[indiceAtual] = escolha;
                 document.querySelectorAll(".btn-option").forEach(b => b.classList.remove("selected"));
-                e.target.classList.add("selected");
+                e.currentTarget.classList.add("selected");
             });
         });
 
         document.getElementById("btn-next").addEventListener("click", () => {
             if (indiceAtual < questoesSorteadas.length - 1) {
+                registrarTempoQuestao();   // antes de mudar o índice
                 indiceAtual++;
                 renderizarQuestao();
             } else {
@@ -332,6 +338,7 @@
 
         document.getElementById("btn-prev").addEventListener("click", () => {
             if (indiceAtual > 0) {
+                registrarTempoQuestao();   // antes de mudar o índice
                 indiceAtual--;
                 renderizarQuestao();
             }
